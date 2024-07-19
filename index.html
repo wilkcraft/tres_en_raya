@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tres en Raya</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(to right, #232526, #414345);
+            color: #f5f5f5;
+        }
+
+        .container {
+            text-align: center;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            color: #f5f5f5;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            max-width: 320px;
+            margin: 0 auto;
+        }
+
+        .cell {
+            width: 100px;
+            height: 100px;
+            background-color: #333;
+            border: 2px solid #555;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2em;
+            color: #f5f5f5;
+            cursor: pointer;
+            user-select: none;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        .cell:hover {
+            background-color: #444;
+            transform: scale(1.05);
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 1.2em;
+            cursor: pointer;
+            background-color: #607d8b;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s, transform 0.3s;
+        }
+
+        button:hover {
+            background-color: #546e7a;
+            transform: scale(1.05);
+        }
+
+        button:active {
+            background-color: #455a64;
+            transform: scale(0.95);
+        }
+
+        /* Popup */
+        .popup {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .popup-content {
+            background: #333;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        #popupMessage {
+            font-size: 1.5em;
+            margin: 20px 0;
+            color: #f5f5f5;
+        }
+
+        #closePopupButton {
+            padding: 10px 20px;
+            font-size: 1.2em;
+            cursor: pointer;
+            background-color: #607d8b;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s, transform 0.3s;
+        }
+
+        #closePopupButton:hover {
+            background-color: #546e7a;
+            transform: scale(1.05);
+        }
+
+        #closePopupButton:active {
+            background-color: #455a64;
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Tres en Raya</h1>
+        <div class="board" id="board">
+            <div class="cell" data-index="0"></div>
+            <div class="cell" data-index="1"></div>
+            <div class="cell" data-index="2"></div>
+            <div class="cell" data-index="3"></div>
+            <div class="cell" data-index="4"></div>
+            <div class="cell" data-index="5"></div>
+            <div class="cell" data-index="6"></div>
+            <div class="cell" data-index="7"></div>
+            <div class="cell" data-index="8"></div>
+        </div>
+        <button id="resetButton">Reiniciar</button>
+    </div>
+
+    <!-- Popup -->
+    <div id="popup" class="popup">
+        <div class="popup-content">
+            <p id="popupMessage"></p>
+            <button id="closePopupButton">Cerrar</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const board = document.getElementById('board');
+            const cells = document.querySelectorAll('.cell');
+            const resetButton = document.getElementById('resetButton');
+            const popup = document.getElementById('popup');
+            const closePopupButton = document.getElementById('closePopupButton');
+            const popupMessage = document.getElementById('popupMessage');
+            let currentPlayer = 'X';
+            let gameActive = true;
+            const boardState = Array(9).fill(null);
+
+            const winningConditions = [
+                [0, 1, 2],
+                [3, 4, 5],
+                [6, 7, 8],
+                [0, 3, 6],
+                [1, 4, 7],
+                [2, 5, 8],
+                [0, 4, 8],
+                [2, 4, 6],
+            ];
+
+            const handleCellClick = (e) => {
+                const clickedCellIndex = parseInt(e.target.getAttribute('data-index'));
+
+                if (boardState[clickedCellIndex] || !gameActive) {
+                    return;
+                }
+
+                boardState[clickedCellIndex] = currentPlayer;
+                e.target.innerText = currentPlayer;
+
+                if (checkWin()) {
+                    gameActive = false;
+                    showPopup(`¡Jugador ${currentPlayer} ha ganado!`);
+                } else if (boardState.every(cell => cell)) {
+                    gameActive = false;
+                    showPopup('¡Es un empate!');
+                }
+
+                currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+            };
+
+            const checkWin = () => {
+                return winningConditions.some(condition => {
+                    return condition.every(index => {
+                        return boardState[index] === currentPlayer;
+                    });
+                });
+            };
+
+            const resetGame = () => {
+                boardState.fill(null);
+                cells.forEach(cell => cell.innerText = '');
+                gameActive = true;
+                currentPlayer = 'X';
+            };
+
+            const showPopup = (message) => {
+                popupMessage.innerText = message;
+                popup.style.display = 'flex';
+            };
+
+            const hidePopup = () => {
+                popup.style.display = 'none';
+                resetGame(); // Reiniciar el juego cuando se cierra el popup
+            };
+
+            cells.forEach(cell => cell.addEventListener('click', handleCellClick));
+            resetButton.addEventListener('click', resetGame);
+            closePopupButton.addEventListener('click', hidePopup);
+        });
+    </script>
+</body>
+</html>

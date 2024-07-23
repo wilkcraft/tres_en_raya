@@ -222,7 +222,7 @@
 
             const hidePopup = () => {
                 popup.style.display = 'none';
-                resetGame(); // Reiniciar el juego cuando se cierra el popup
+                // remove resetGame call here
             };
 
             cells.forEach(cell => cell.addEventListener('click', handleCellClick));
